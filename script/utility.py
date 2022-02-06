@@ -4,7 +4,7 @@ import torch
 
 def calc_gso(dir_adj, gso_type):
     if sp.issparse(dir_adj):
-        id = sp.identity(dir_adj.shape[0], dtype=dir_adj.dtype, format='csc')
+        id = sp.identity(dir_adj.shape[0], format='csc')
         # Symmetrizing an adjacency matrix
         adj = dir_adj + dir_adj.T.multiply(dir_adj.T > dir_adj) - dir_adj.multiply(dir_adj.T > dir_adj)
         #adj = 0.5 * (dir_adj + dir_adj.transpose())
@@ -46,7 +46,7 @@ def calc_gso(dir_adj, gso_type):
             raise ValueError(f'{gso_type} is not defined.')
     
     else:
-        id = np.identity(dir_adj.shape[0], dtype=dir_adj.dtype)
+        id = np.identity(dir_adj.shape[0])
         # Symmetrizing an adjacency matrix
         adj = np.maximum(dir_adj, dir_adj.T)
         #adj = 0.5 * (dir_adj + dir_adj.T)
@@ -74,7 +74,7 @@ def calc_gso(dir_adj, gso_type):
             row_sum = np.sum(adj, axis=1).A1
             row_sum_inv = np.power(row_sum, -1)
             row_sum_inv[np.isinf(row_sum_inv)] = 0.
-            deg_inv = np.diag(row_sum_inv, format='csc')
+            deg_inv = np.diag(row_sum_inv)
             # A_{rw} = D^{-1} * A
             rw_norm_adj = deg_inv.dot(adj)
 

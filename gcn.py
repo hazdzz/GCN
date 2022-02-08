@@ -1,4 +1,3 @@
-import logging
 import os
 import argparse
 
@@ -42,14 +41,14 @@ def get_parameters():
                         choices=['sym_renorm_adj', 'rw_renorm_adj'], \
                         help='graph shift operator, default as sym_renorm_adj, rw_renorm_adj as alternative')
     parser.add_argument('--K', type=int, default=2, help='K layer, default as 2')
-    parser.add_argument('--lr', type=float, default=0.01, help='learning rate, defaut as 0.01')
+    parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
     parser.add_argument('--weight_decay', type=float, default=0.0001, help='weight decay (L2 penalty)')
     parser.add_argument('--n_hid', type=int, default=64, help='the channel size of hidden layer feature, default as 64')
     parser.add_argument('--enable_bias', type=bool, default=True, help='default as True')
-    parser.add_argument('--droprate', type=float, default=0.5, help='dropout rate, default as 0.5')
+    parser.add_argument('--droprate', type=float, default=0, help='dropout rate, default as 0.5')
     parser.add_argument('--epochs', type=int, default=10000, help='epochs, default as 10000')
     parser.add_argument('--opt', type=str, default='adam', help='optimizer, default as adam')
-    parser.add_argument('--early_stopping_patience', type=int, default=50, help='early stopping patience')
+    parser.add_argument('--patience', type=int, default=50, help='early stopping patience')
     args = parser.parse_args()
     print('Training configs: {}'.format(args))
 
@@ -98,14 +97,14 @@ def get_parameters():
     enable_bias = args.enable_bias
     epochs = args.epochs
     opt = args.opt
-    early_stopping_patience = args.early_stopping_patience
+    patience = args.patience
 
     model_save_dir = os.path.join('./model/save', dataset)
     os.makedirs(name=model_save_dir, exist_ok=True)
     model_save_path = model_name + '_' + gso_type + '_' + str(K) + '_layer' + '.pth'
     model_save_path = os.path.join(model_save_dir, model_save_path)
 
-    return device, dataset, model_name, gso_type, lr, weight_decay, droprate, n_hid, enable_bias, K, epochs, opt, early_stopping_patience, model_save_path
+    return device, dataset, model_name, gso_type, lr, weight_decay, droprate, n_hid, enable_bias, K, epochs, opt, patience, model_save_path
     
 def process_data(device, dataset, gso_type):
     if dataset == 'corar' or dataset == 'citeseerr' or dataset == 'pubmed' or dataset == 'ogbn-arxiv':
@@ -130,12 +129,11 @@ def process_data(device, dataset, gso_type):
 
     return feature, filter, label, idx_train, idx_val, idx_test, n_feat, n_class
 
-def prepare_model(n_feat, n_hid, n_class, enable_bias, K, droprate, \
-                early_stopping_patience, model_save_path, opt, lr):
+def prepare_model(n_feat, n_hid, n_class, enable_bias, K, droprate, patience, model_save_path, opt, lr, weight_decay):
     model = models.GCN(n_feat, n_hid, n_class, enable_bias, K, droprate).to(device)
     
     loss = nn.NLLLoss()
-    early_stopping = earlystopping.EarlyStopping(patience=early_stopping_patience, path=model_save_path, verbose=True)
+    early_stopping = earlystopping.EarlyStopping(patience=patience, path=model_save_path, verbose=True)
 
     if opt == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay, amsgrad=False)
@@ -198,8 +196,8 @@ def test(model, model_save_path, feature, filter, label, loss, idx_test, model_n
     #nni.report_final_result(acc_test.item())
 
 if __name__ == "__main__":
-    device, dataset, model_name, gso_type, lr, weight_decay, droprate, n_hid, enable_bias, K, epochs, opt, early_stopping_patience, model_save_path = get_parameters()
+    device, dataset, model_name, gso_type, lr, weight_decay, droprate, n_hid, enable_bias, K, epochs, opt, patience, model_save_path = get_parameters()
     feature, filter, label, idx_train, idx_val, idx_test, n_feat, n_class = process_data(device, dataset, gso_type)
-    model, loss, early_stopping, optimizer, scheduler = prepare_model(n_feat, n_hid, n_class, enable_bias, K, droprate, early_stopping_patience, model_save_path, opt, lr)
+    model, loss, early_stopping, optimizer, scheduler = prepare_model(n_feat, n_hid, n_class, enable_bias, K, droprate, patience, model_save_path, opt, lr, weight_decay)
     mean_train_epoch_time_duration = train(epochs, model, optimizer, scheduler, early_stopping, feature, filter, label, loss, idx_train, idx_val)
     test(model, model_save_path, feature, filter, label, loss, idx_test, model_name, dataset, mean_train_epoch_time_duration)

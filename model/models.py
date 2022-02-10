@@ -21,7 +21,7 @@ class MLP(nn.Module):
         for k in range(self.K-1):
             x = self.linear_layers[k](x)
             x = self.relu(x)
-        x = self.dropout(x)
+            x = self.dropout(x)
         x = self.linear_layers[-1](x)
         x = self.log_softmax(x)
 

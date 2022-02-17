@@ -85,8 +85,8 @@ def get_parameters():
         param = nni.get_next_parameter()
         K, lr, weight_decay, droprate = [*param.values()]
     else:
-        if args.K <= 1:
-            raise ValueError(f'ERROR: The layer K is smaller than 2!')
+        if args.K <= 0:
+            raise ValueError(f'ERROR: The layer K is smaller than 1!')
         else:
             K = args.K
         lr = args.lr
